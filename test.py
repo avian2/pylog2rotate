@@ -2,7 +2,7 @@ from math import log
 import datetime
 import unittest
 
-from lognrotate import backups_to_keep, Log2RotateStr
+from lognrotate import backups_to_keep, Log2RotateTarsnap
 
 def print_set(r):
 	l = []
@@ -56,10 +56,6 @@ class TestBackupsToKeep(unittest.TestCase):
 			self.assertEqual(f, state)
 
 			#print_set(state)
-
-class Log2RotateTarsnap(Log2RotateStr):
-	def strptime(self, s):
-		return datetime.datetime.strptime(s, "backup-%Y%m%d")
 
 class TestLog2RotateStr(unittest.TestCase):
 	def setUp(self):

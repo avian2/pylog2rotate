@@ -1,4 +1,6 @@
+import datetime
 from math import log
+import sys
 
 def backups_to_keep(n):
 	if n == 0:
@@ -51,5 +53,36 @@ class Log2RotateStr(Log2Rotate):
 
 		return (x2 - y2).days
 
+class Log2RotateTarsnap(Log2RotateStr):
+	def strptime(self, s):
+		return datetime.datetime.strptime(s, "backup-%Y%m%d")
+
+
+def main():
+	KEEP_ALL_DAYS = 90
+
+	inp = []
+	for l in sys.stdin:
+		inp.append(l.strip())
+
+	l2r = Log2RotateTarsnap()
+
+	inp.sort(cmp=l2r.cmp)
+
+	out = inp[-KEEP_ALL_DAYS:]
+
+	inp_l2r = inp[:-KEEP_ALL_DAYS]
+	if not inp_l2r:
+		return
+
+	out_l2r = l2r.backups_to_keep(inp_l2r)
+
+	out += out_l2r
+
+
+	diff = set(inp) - set(out)
+	for l in diff:
+		print l
+
 if __name__ == '__main__':
-	unittest.main()
+	main()
