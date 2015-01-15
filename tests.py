@@ -174,5 +174,30 @@ class TestMain(unittest.TestCase):
 
 		self.assertEqual(set([	"2015-01-02"]), set(out))
 
+	def test_always_keep_invalid(self):
+		args = MockArgs()
+		args.show_keep = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+		inp.append("strange")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"strange",
+					"2015-01-01",
+					"2015-01-03",
+					"2015-01-04"]), set(out))
+
+	def test_never_delete_invalid(self):
+		args = MockArgs()
+		args.show_delete = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+		inp.append("strange")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-02"]), set(out))
+
 if __name__ == '__main__':
 	unittest.main()

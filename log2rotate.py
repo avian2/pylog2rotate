@@ -64,6 +64,21 @@ def run(args, inp):
 
 	l2r = Log2RotateStr(args.fmt)
 
+	inp_orig = set(inp)
+
+	# filter out all lines that do not conform to format
+	# we always want to keep these.
+	def parseable(s):
+		try:
+			l2r.strptime(s)
+		except ValueError:
+			return False
+		else:
+			return True
+
+	inp = filter(parseable, inp)
+	out = list(inp_orig - set(inp))
+
 	# sort input list of backups. oldest backups first.
 	inp.sort(cmp=l2r.cmp)
 
@@ -72,23 +87,19 @@ def run(args, inp):
 	# and remove them from input list for the log2rotate
 	# algorithm.
 	if args.skip > 0:
-		out = inp[-args.skip:]
-		inp_l2r = inp[:-args.skip]
-	else:
-		out = []
-		inp_l2r = list(inp)
+		out += inp[-args.skip:]
+		inp = inp[:-args.skip]
 
 	# if there are any backups left that need to be rotated,
 	# run them through log2rotate and append the result to
 	# the list of backups to keep.
-	if inp_l2r:
-		out_l2r = l2r.backups_to_keep(inp_l2r)
-		out += out_l2r
+	if inp:
+		out += l2r.backups_to_keep(inp)
 
 	if args.show_keep:
 		return out
 	else:
-		return set(inp) - set(out)
+		return inp_orig - set(out)
 
 def main():
 	parser = argparse.ArgumentParser(description="rotate backups using exponentially-growing periods.")
