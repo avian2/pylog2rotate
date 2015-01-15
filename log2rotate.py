@@ -11,8 +11,10 @@ def backups_to_keep(n):
 	else:
 		return set([n]) | backups_to_keep(n - 2**(int(log(n, 2)) - 1))
 
+class Log2RotateUnsafeError(ValueError): pass
+
 class Log2Rotate(object):
-	def backups_to_keep(self, state):
+	def backups_to_keep(self, state, unsafe=False):
 		state_sorted = sorted(state, cmp=self.cmp)
 
 		if len(state_sorted) < 2:
@@ -30,7 +32,11 @@ class Log2Rotate(object):
 				n0 = self.sub(last, b) + 1
 
 				if n0 in r:
+					r.remove(n0)
 					new_state.append(b)
+
+			if r and not unsafe:
+				raise Log2RotateUnsafeError
 
 			return new_state
 
@@ -96,7 +102,7 @@ def run(args, inp):
 	# run them through log2rotate and append the result to
 	# the list of backups to keep.
 	if inp:
-		out += l2r.backups_to_keep(inp)
+		out += l2r.backups_to_keep(inp, unsafe=args.unsafe)
 
 	if args.show_keep:
 		return out
@@ -120,15 +126,18 @@ def main():
 	args = parser.parse_args()
 
 	if (not args.show_keep and not args.show_delete) or (args.show_keep and args.show_delete):
-		sys.stderr.write("please specify either --keep or --delete\n")
+		sys.stderr.write("error: please specify either --keep or --delete\n")
 		sys.exit(1)
 
 	inp = [ line.strip() for line in sys.stdin ]
 
-	out = run(args, inp)
-
-	for line in out:
-		print line
+	try:
+		out = run(args, inp)
+	except Log2RotateUnsafeError:
+		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway)\n")
+	else:
+		for line in out:
+			print line
 
 if __name__ == '__main__':
 	main()

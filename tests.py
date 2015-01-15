@@ -2,7 +2,7 @@ from math import log
 import datetime
 import unittest
 
-from log2rotate import backups_to_keep, Log2RotateStr, run
+from log2rotate import backups_to_keep, Log2RotateStr, run, Log2RotateUnsafeError
 
 def print_set(r):
 	l = []
@@ -116,6 +116,22 @@ class TestLog2RotateStr(unittest.TestCase):
 		self.assertGreaterEqual(len(new_state), log(n, 2))
 		self.assertLess(len(new_state), 2*log(n, 2))
 
+	def test_already_rotated(self):
+		state = self._gen_state(4)
+
+		state_1 = self.l2r.backups_to_keep(state)
+		state_2 = self.l2r.backups_to_keep(state_1)
+
+		self.assertEqual(state_1, state_2)
+
+	def test_unsafe(self):
+		# algorithm says "backup-20150103" should be kept, but
+		# is missing in input list
+		state = [	"backup-20150101",
+				"backup-20150104" ]
+
+		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
+
 class MockArgs(object):
 	def __init__(self):
 		self.fmt = "%Y-%m-%d"
@@ -198,6 +214,28 @@ class TestMain(unittest.TestCase):
 		out = run(args, inp)
 
 		self.assertEqual(set([	"2015-01-02"]), set(out))
+
+	def test_unsafe(self):
+		args = MockArgs()
+		args.show_keep = True
+
+		inp = [	"2015-01-01",
+			"2015-01-04" ]
+
+		self.assertRaises(Log2RotateUnsafeError, run, args, inp)
+
+	def test_unsafe_force(self):
+		args = MockArgs()
+		args.show_keep = True
+		args.unsafe = True
+
+		inp = [	"2015-01-01",
+			"2015-01-04" ]
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-01",
+					"2015-01-04"]), set(out))
 
 if __name__ == '__main__':
 	unittest.main()
