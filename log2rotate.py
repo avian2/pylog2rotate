@@ -1,3 +1,4 @@
+import argparse
 import datetime
 from math import log
 import sys
@@ -41,6 +42,12 @@ class Log2Rotate(object):
 
 class Log2RotateStr(Log2Rotate):
 
+	def __init__(self, fmt):
+		self.fmt = fmt
+
+	def strptime(self, s):
+		return datetime.datetime.strptime(s, self.fmt)
+
 	def cmp(self, x, y):
 		x2 = self.strptime(x)
 		y2 = self.strptime(y)
@@ -53,36 +60,62 @@ class Log2RotateStr(Log2Rotate):
 
 		return (x2 - y2).days
 
-class Log2RotateTarsnap(Log2RotateStr):
-	def strptime(self, s):
-		return datetime.datetime.strptime(s, "backup-%Y%m%d")
+def run(args, inp):
 
+	l2r = Log2RotateStr(args.fmt)
 
-def main():
-	KEEP_ALL_DAYS = 90
-
-	inp = []
-	for l in sys.stdin:
-		inp.append(l.strip())
-
-	l2r = Log2RotateTarsnap()
-
+	# sort input list of backups. oldest backups first.
 	inp.sort(cmp=l2r.cmp)
 
-	out = inp[-KEEP_ALL_DAYS:]
+	# if we are skipping some of the latest backups,
+	# put them directly into the list of backups to keep
+	# and remove them from input list for the log2rotate
+	# algorithm.
+	if args.skip > 0:
+		out = inp[-args.skip:]
+		inp_l2r = inp[:-args.skip]
+	else:
+		out = []
+		inp_l2r = list(inp)
 
-	inp_l2r = inp[:-KEEP_ALL_DAYS]
-	if not inp_l2r:
-		return
+	# if there are any backups left that need to be rotated,
+	# run them through log2rotate and append the result to
+	# the list of backups to keep.
+	if inp_l2r:
+		out_l2r = l2r.backups_to_keep(inp_l2r)
+		out += out_l2r
 
-	out_l2r = l2r.backups_to_keep(inp_l2r)
+	if args.show_keep:
+		return out
+	else:
+		return set(inp) - set(out)
 
-	out += out_l2r
+def main():
+	parser = argparse.ArgumentParser(description="rotate backups using exponentially-growing periods.")
 
+	parser.add_argument('-d', '--delete', action='store_true', dest='show_delete',
+			help="show backups to delete")
+	parser.add_argument('-k', '--keep', action='store_true', dest='show_keep',
+			help="show backups to keep")
+	parser.add_argument('-u', '--unsafe', action='store_true', dest='unsafe',
+			help="make unsafe recommendations")
+	parser.add_argument('-s', '--skip', metavar='NUM', type=int, dest='skip', default=0,
+			help="always keep NUM latest backups")
+	parser.add_argument('-f', '--format', metavar='FMT', dest='fmt', default="%Y-%m-%d",
+			help="use FMT for parsing date from backup name")
 
-	diff = set(inp) - set(out)
-	for l in diff:
-		print l
+	args = parser.parse_args()
+
+	if (not args.show_keep and not args.show_delete) or (args.show_keep and args.show_delete):
+		sys.stderr.write("please specify either --keep or --delete\n")
+		sys.exit(1)
+
+	inp = [ line.strip() for line in sys.stdin ]
+
+	out = run(args, inp)
+
+	for line in out:
+		print line
 
 if __name__ == '__main__':
 	main()

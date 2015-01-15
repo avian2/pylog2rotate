@@ -2,7 +2,7 @@ from math import log
 import datetime
 import unittest
 
-from lognrotate import backups_to_keep, Log2RotateTarsnap
+from log2rotate import backups_to_keep, Log2RotateStr, run
 
 def print_set(r):
 	l = []
@@ -57,24 +57,28 @@ class TestBackupsToKeep(unittest.TestCase):
 
 			#print_set(state)
 
+def _gen_state(n, fmt):
+	now = datetime.datetime(2015, 1, 1)
+	td = datetime.timedelta(days=1)
+
+	state = []
+
+	for i in range(n):
+		state.append(now.strftime(fmt))
+		now += td
+
+	return state
+
 class TestLog2RotateStr(unittest.TestCase):
 	def setUp(self):
-		self.l2r = Log2RotateTarsnap()
+		self.fmt = "backup-%Y%m%d"
+		self.l2r = Log2RotateStr(self.fmt)
 
 	def test_zero(self):
 		self.assertEqual(set(), self.l2r.backups_to_keep([]))
 
 	def _gen_state(self, n):
-		now = datetime.datetime(2015, 1, 1)
-		td = datetime.timedelta(days=1)
-
-		state = []
-
-		for i in range(n):
-			state.append(now.strftime("backup-%Y%m%d"))
-			now += td
-
-		return state
+		return _gen_state(n, self.fmt)
 
 	def test_zero(self):
 		self.assertEqual([], self.l2r.backups_to_keep([]))
@@ -112,6 +116,63 @@ class TestLog2RotateStr(unittest.TestCase):
 		self.assertGreaterEqual(len(new_state), log(n, 2))
 		self.assertLess(len(new_state), 2*log(n, 2))
 
+class MockArgs(object):
+	def __init__(self):
+		self.fmt = "%Y-%m-%d"
+		self.skip = 0
+
+	def __getattr__(self, name):
+		return None
+
+class TestMain(unittest.TestCase):
+	def test_default_keep(self):
+		args = MockArgs()
+		args.show_keep = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-01",
+					"2015-01-03",
+					"2015-01-04"]), set(out))
+
+	def test_default_delete(self):
+		args = MockArgs()
+		args.show_delete = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-02"]), set(out))
+
+	def test_skip_keep(self):
+		args = MockArgs()
+		args.show_keep = True
+		args.skip = 3
+
+		inp = _gen_state(7, "%Y-%m-%d")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-01",
+					"2015-01-03",
+					"2015-01-04",
+					"2015-01-05",
+					"2015-01-06",
+					"2015-01-07"]), set(out))
+
+	def test_skip_delete(self):
+		args = MockArgs()
+		args.show_delete = True
+		args.skip = 3
+
+		inp = _gen_state(7, "%Y-%m-%d")
+
+		out = run(args, inp)
+
+		self.assertEqual(set([	"2015-01-02"]), set(out))
 
 if __name__ == '__main__':
 	unittest.main()
