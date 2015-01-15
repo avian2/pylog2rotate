@@ -1,6 +1,21 @@
 Python port of log2rotate
 =========================
 
+This is a rewrite of the log2rotate tool by Chris Forno. It provides the same
+command line interface as the original and adds:
+
+- keeping an arbitrary number of recent backups before applying the
+  exponential rotation algorithm (--skip)
+
+- support for arbitrary date formats (--format)
+
+- a better detection of situations where applying the rotation algorithm
+  might be dangerous (--unsafe)
+
+- a Python module providing a Log2Rotate class that can be used to apply the
+  exponential rotation algorithm to arbitrary Python objects for which
+  subtraction and comparison operators can be defined.
+
 See http://jekor.com/log2rotate
 
 
