@@ -237,5 +237,22 @@ class TestMain(unittest.TestCase):
 		self.assertEqual(set([	"2015-01-01",
 					"2015-01-04"]), set(out))
 
+	def test_duplicates_ignored_keep(self):
+		args = MockArgs()
+		args.show_keep = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+
+		self.assertEqual(	run(args, inp),
+					run(args, inp*2) )
+
+	def test_duplicates_ignored_delete(self):
+		args = MockArgs()
+		args.show_delete = True
+
+		inp = _gen_state(4, "%Y-%m-%d")
+
+		self.assertEqual(	run(args, inp),
+					run(args, inp*2) )
 if __name__ == '__main__':
 	unittest.main()
