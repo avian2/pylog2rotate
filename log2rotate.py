@@ -78,6 +78,8 @@ def run(args, inp):
 
 	inp = filter(parseable, inp)
 	out = list(inp_orig - set(inp))
+	if out:
+		sys.stderr.write("warning: keeping %d backups with unparseable names\n" % (len(out,)))
 
 	# sort input list of backups. oldest backups first.
 	inp.sort(cmp=l2r.cmp)
