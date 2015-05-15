@@ -116,13 +116,42 @@ class TestLog2RotateStr(unittest.TestCase):
 		self.assertGreaterEqual(len(new_state), log(n, 2))
 		self.assertLess(len(new_state), 2*log(n, 2))
 
-	def test_already_rotated(self):
-		state = self._gen_state(4)
+	def test_idempotency(self):
+		state = self._gen_state(10000)
 
 		state_1 = self.l2r.backups_to_keep(state)
 		state_2 = self.l2r.backups_to_keep(state_1)
 
 		self.assertEqual(state_1, state_2)
+
+	def test_incremental(self):
+		n = 200
+
+		state = self._gen_state(n)
+
+		inc_state = []
+		for n in xrange(n):
+			inc_state.append(state[n])
+			inc_state = self.l2r.backups_to_keep(inc_state)
+
+			self.assertEqual(inc_state, self.l2r.backups_to_keep(state[:n+1]))
+
+	def test_incremental_fuzz(self):
+		n = 50
+
+		state = self._gen_state(n)
+
+		for m in xrange(n):
+			inc_state = []
+			state0 = []
+			for n in xrange(n):
+				if n != m:
+					inc_state.append(state[n])
+					state0.append(state[n])
+
+				inc_state = self.l2r.backups_to_keep(inc_state, fuzz=1)
+
+				self.assertEqual(inc_state, self.l2r.backups_to_keep(state0, fuzz=1))
 
 	def test_unsafe(self):
 		# algorithm says "backup-20150103" should be kept, but

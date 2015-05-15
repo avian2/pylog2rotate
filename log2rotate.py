@@ -14,7 +14,7 @@ def backups_to_keep(n):
 class Log2RotateUnsafeError(ValueError): pass
 
 class Log2Rotate(object):
-	def backups_to_keep(self, state, unsafe=False):
+	def backups_to_keep(self, state, unsafe=False, fuzz=0):
 		state_sorted = sorted(state, cmp=self.cmp)
 
 		if len(state_sorted) < 2:
@@ -23,20 +23,21 @@ class Log2Rotate(object):
 			last = state_sorted[-1]
 			first = state_sorted[0]
 
+			n0_to_b = dict((self.sub(last, b) + 1, b) for b in state)
 			n = self.sub(last, first) + 1
 
 			r = backups_to_keep(n)
 
 			new_state = []
-			for b in state:
-				n0 = self.sub(last, b) + 1
-
-				if n0 in r:
-					r.remove(n0)
-					new_state.append(b)
-
-			if r and not unsafe:
-				raise Log2RotateUnsafeError
+			for n0 in sorted(r, reverse=True):
+				for m in range(fuzz+1):
+					if n0+m in n0_to_b:
+						b = n0_to_b[n0+m]
+						new_state.append(b)
+						break
+				else:
+					if not unsafe:
+						raise Log2RotateUnsafeError
 
 			return new_state
 
