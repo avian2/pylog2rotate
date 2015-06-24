@@ -18,7 +18,7 @@ class Log2Rotate(object):
 		pass
 
 	def backups_to_keep(self, state, unsafe=False, fuzz=0):
-		state_sorted = sorted(state, cmp=self.cmp)
+		state_sorted = sorted(state, key=lambda x: self.sub(x, state[0]))
 
 		if len(state_sorted) < 2:
 			return state_sorted
@@ -55,9 +55,6 @@ class Log2Rotate(object):
 
 		return backups_to_keep(n)
 
-	def cmp(self, x, y):
-		return cmp(x, y)
-
 	def sub(self, x, y):
 		return x - y
 
@@ -68,12 +65,6 @@ class Log2RotateDatetime(Log2Rotate):
 
 	def strptime(self, s):
 		return datetime.datetime.strptime(s, self.fmt)
-
-	def cmp(self, x, y):
-		x2 = self.strptime(x)
-		y2 = self.strptime(y)
-
-		return cmp(x2, y2)
 
 	def sub(self, x, y):
 		x2 = self.strptime(x)
