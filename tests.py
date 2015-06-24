@@ -72,7 +72,7 @@ def _gen_state(n, fmt):
 class TestLog2RotateStr(unittest.TestCase):
 	def setUp(self):
 		self.fmt = "backup-%Y%m%d"
-		self.l2r = Log2RotateStr(self.fmt)
+		self.l2r = Log2RotateStr(fmt=self.fmt)
 
 	def test_zero(self):
 		self.assertEqual(set(), self.l2r.backups_to_keep([]))
@@ -158,6 +158,34 @@ class TestLog2RotateStr(unittest.TestCase):
 		# is missing in input list
 		state = [	"backup-20150101",
 				"backup-20150104" ]
+
+		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
+
+class TestLog2RotateStrSkip(unittest.TestCase):
+	def setUp(self):
+		self.fmt = "backup-%Y%m%d"
+		self.l2r = Log2RotateStr(fmt=self.fmt, skip=3)
+
+	def _gen_state(self, n):
+		return _gen_state(n, self.fmt)
+
+	def test_skip_7(self):
+		state = self._gen_state(7)
+
+		self.assertEqual([	"backup-20150101",
+					"backup-20150103",
+					"backup-20150104",
+					"backup-20150105",
+					"backup-20150106",
+					"backup-20150107"], self.l2r.backups_to_keep(state))
+
+	def test_skip_3(self):
+		state = self._gen_state(3)
+		self.assertEqual(state, self.l2r.backups_to_keep(state))
+
+	def test_skip_unsafe(self):
+		state = [	"backup-20150101",
+				"backup-20150103" ]
 
 		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
 

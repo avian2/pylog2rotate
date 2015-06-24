@@ -14,6 +14,9 @@ def backups_to_keep(n):
 class Log2RotateUnsafeError(ValueError): pass
 
 class Log2Rotate(object):
+	def __init__(self, **kwargs):
+		pass
+
 	def backups_to_keep(self, state, unsafe=False, fuzz=0):
 		state_sorted = sorted(state, cmp=self.cmp)
 
@@ -26,7 +29,7 @@ class Log2Rotate(object):
 			n0_to_b = dict((self.sub(last, b) + 1, b) for b in state)
 			n = self.sub(last, first) + 1
 
-			r = backups_to_keep(n)
+			r = self.pattern(n)
 
 			new_state = []
 			for n0 in sorted(r, reverse=True):
@@ -41,16 +44,27 @@ class Log2Rotate(object):
 
 			return new_state
 
+	def pattern(self, n):
+		"""Returns a pattern of backups to keep, given history of n backups.
+
+		Returned value is a set of integers, where each integer
+		represents a backup to keep.
+
+		The latest backup is numbered 1. The oldest backup is numbered n.
+		"""
+
+		return backups_to_keep(n)
+
 	def cmp(self, x, y):
 		return cmp(x, y)
 
 	def sub(self, x, y):
 		return x - y
 
-class Log2RotateStr(Log2Rotate):
-
-	def __init__(self, fmt):
-		self.fmt = fmt
+class Log2RotateDatetime(Log2Rotate):
+	def __init__(self, **kwargs):
+		self.fmt = kwargs['fmt']
+		super(Log2RotateDatetime, self).__init__(**kwargs)
 
 	def strptime(self, s):
 		return datetime.datetime.strptime(s, self.fmt)
@@ -67,9 +81,28 @@ class Log2RotateStr(Log2Rotate):
 
 		return (x2 - y2).days
 
+class Log2RotateSkip(Log2Rotate):
+	def __init__(self, **kwargs):
+		self.skip = kwargs.get('skip', 0)
+		super(Log2RotateSkip, self).__init__(**kwargs)
+
+	def pattern(self, n):
+		assert self.skip >= 0
+
+		r = set(range(1, self.skip+1))
+
+		if n > self.skip:
+			r2 = backups_to_keep(n - self.skip)
+			r |= set(self.skip + i for i in r2)
+
+		return r
+
+class Log2RotateStr(Log2RotateDatetime, Log2RotateSkip, Log2Rotate):
+	pass
+
 def run(args, inp):
 
-	l2r = Log2RotateStr(args.fmt)
+	l2r = Log2RotateStr(fmt=args.fmt, skip=args.skip)
 
 	inp_orig = set(inp)
 
@@ -87,17 +120,6 @@ def run(args, inp):
 	out = list(inp_orig - set(inp))
 	if out:
 		sys.stderr.write("warning: keeping %d backups with unparseable names\n" % (len(out,)))
-
-	# sort input list of backups. oldest backups first.
-	inp.sort(cmp=l2r.cmp)
-
-	# if we are skipping some of the latest backups,
-	# put them directly into the list of backups to keep
-	# and remove them from input list for the log2rotate
-	# algorithm.
-	if args.skip > 0:
-		out += inp[-args.skip:]
-		inp = inp[:-args.skip]
 
 	# if there are any backups left that need to be rotated,
 	# run them through log2rotate and append the result to
@@ -128,6 +150,10 @@ def main():
 
 	if (not args.show_keep and not args.show_delete) or (args.show_keep and args.show_delete):
 		sys.stderr.write("error: please specify either --keep or --delete\n")
+		sys.exit(1)
+
+	if args.skip < 0:
+		sys.stderr.write("error: argument to --skip should be non-negative\n")
 		sys.exit(1)
 
 	inp = [ line.strip() for line in sys.stdin ]
