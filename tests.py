@@ -12,7 +12,7 @@ def print_set(r):
 		else:
 			l.append(' ')
 	
-	print ''.join(l)
+	print(''.join(l))
 		
 
 class TestBackupsToKeep(unittest.TestCase):
@@ -130,7 +130,7 @@ class TestLog2RotateStr(unittest.TestCase):
 		state = self._gen_state(n)
 
 		inc_state = []
-		for n in xrange(n):
+		for n in range(n):
 			inc_state.append(state[n])
 			inc_state = self.l2r.backups_to_keep(inc_state)
 
@@ -141,10 +141,10 @@ class TestLog2RotateStr(unittest.TestCase):
 
 		state = self._gen_state(n)
 
-		for m in xrange(n):
+		for m in range(n):
 			inc_state = []
 			state0 = []
-			for n in xrange(n):
+			for n in range(n):
 				if n != m:
 					inc_state.append(state[n])
 					state0.append(state[n])

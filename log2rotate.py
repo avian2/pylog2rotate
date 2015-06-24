@@ -18,7 +18,14 @@ class Log2Rotate(object):
 		pass
 
 	def backups_to_keep(self, state, unsafe=False, fuzz=0):
-		state_sorted = sorted(state, key=lambda x: self.sub(x, state[0]))
+		for ref in state:
+			# "ref" is just a random item from the iterable - it doesn't
+			# matter which.
+			state_sorted = sorted(state, key=lambda x: self.sub(x, ref))
+			break
+		else:
+			# if "state" is empty, just return it.
+			return state
 
 		if len(state_sorted) < 2:
 			return state_sorted
@@ -107,8 +114,8 @@ def run(args, inp):
 		else:
 			return True
 
-	inp = filter(parseable, inp)
-	out = list(inp_orig - set(inp))
+	inp = set(filter(parseable, inp))
+	out = list(inp_orig - inp)
 	if out:
 		sys.stderr.write("warning: keeping %d backups with unparseable names\n" % (len(out,)))
 
@@ -155,7 +162,7 @@ def main():
 		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway)\n")
 	else:
 		for line in out:
-			print line
+			print(line)
 
 if __name__ == '__main__':
 	main()
