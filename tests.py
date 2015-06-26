@@ -141,14 +141,14 @@ class TestLog2RotateStr(unittest.TestCase):
 		# same result as rotating all at once.
 		#
 		# all combinations with one backup missing are tested.
-		n = 50
+		n0 = 50
 
-		state = self._gen_state(n)
+		state = self._gen_state(n0)
 
-		for m in range(n):
+		for m in range(n0):
 			inc_state = []
 			state0 = []
-			for n in range(n):
+			for n in range(n0):
 				if n != m:
 					inc_state.append(state[n])
 					state0.append(state[n])
@@ -156,6 +156,29 @@ class TestLog2RotateStr(unittest.TestCase):
 				inc_state = self.l2r.backups_to_keep(inc_state, fuzz=1)
 
 				self.assertEqual(inc_state, self.l2r.backups_to_keep(state0, fuzz=1))
+
+	def test_compare_fuzz_nofuzz(self):
+		n0 = 50
+
+		state = self._gen_state(n0)
+
+		for m in range(n0):
+			state0 = []
+			state0_nofuzz = []
+
+			for n in range(n0):
+				if n != m:
+					state0.append(state[n])
+				state0_nofuzz.append(state[n])
+
+			rstate = self.l2r.backups_to_keep(state0, fuzz=1)
+			rstate_nofuzz = self.l2r.backups_to_keep(state0_nofuzz)
+
+			o = len(rstate)
+			o_nofuzz = len(rstate_nofuzz)
+
+			self.assertGreaterEqual(o_nofuzz, o)
+			self.assertLessEqual(o_nofuzz - o, 1)
 
 	def test_oldest_backup_gone(self):
 		# We have a rotated set of backups. The oldest backup
