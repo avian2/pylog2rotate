@@ -17,7 +17,7 @@ class Log2Rotate(object):
 	def __init__(self, **kwargs):
 		pass
 
-	def backups_to_keep(self, state, unsafe=False, fuzz=0):
+	def backups_to_keep(self, state, unsafe=False, fuzz=0, fuzz_list=None):
 		for ref in state:
 			# "ref" is just a random item from the iterable - it doesn't
 			# matter which.
@@ -38,12 +38,17 @@ class Log2Rotate(object):
 
 			r = self.pattern(n)
 
+			new_state_set = set()
 			new_state = []
 			for n0 in sorted(r, reverse=True):
 				for m in range(fuzz+1):
 					if n0+m in n0_to_b:
 						b = n0_to_b[n0+m]
-						new_state.append(b)
+						if b not in new_state_set:
+							new_state.append(b)
+							new_state_set.add(b)
+						if m > 0 and fuzz_list is not None:
+							fuzz_list.append(1)
 						break
 				else:
 					if not unsafe:

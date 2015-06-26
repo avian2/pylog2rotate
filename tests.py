@@ -202,6 +202,13 @@ class TestLog2RotateStrSkip(unittest.TestCase):
 		state = self._gen_state(3)
 		self.assertEqual(state, self.l2r.backups_to_keep(state))
 
+	def test_skip_3(self):
+		state = [	"backup-20150101",
+				"backup-20150103" ]
+		fuzz_list = []
+		self.assertEqual(state, self.l2r.backups_to_keep(state, fuzz_list=fuzz_list, fuzz=1))
+		self.assertEqual(len(fuzz_list), 1)
+
 	def test_skip_unsafe(self):
 		state = [	"backup-20150101",
 				"backup-20150103" ]
