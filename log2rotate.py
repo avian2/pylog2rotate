@@ -105,7 +105,7 @@ class Log2RotateStr(Log2RotateDatetime, Log2RotateSkip, Log2Rotate):
 
 def run(args, inp):
 
-	l2r = Log2RotateStr(fmt=args.fmt, skip=args.skip)
+	l2r = Log2RotateStr(fmt=args.fmt, skip=args.skip, fuzz=args.fuzz)
 
 	inp_orig = set(inp)
 
@@ -128,7 +128,11 @@ def run(args, inp):
 	# run them through log2rotate and append the result to
 	# the list of backups to keep.
 	if inp:
-		out += l2r.backups_to_keep(inp, unsafe=args.unsafe)
+		fuzz_list = []
+		out += l2r.backups_to_keep(inp, unsafe=args.unsafe, fuzz_list=[])
+
+		if fuzz_list:
+			sys.stderr.write("warning: used fuzzy matching for %d backups\n" % (len(fuzz_list),))
 
 	if args.show_keep:
 		return out
@@ -146,6 +150,8 @@ def main():
 			help="make unsafe recommendations")
 	parser.add_argument('-s', '--skip', metavar='NUM', type=int, dest='skip', default=0,
 			help="always keep NUM latest backups")
+	parser.add_argument('-F', '--fuzz', metavar='NUM', type=int, dest='fuzz', default=0,
+			help="do fuzzy matching for up to NUM missing backups in series")
 	parser.add_argument('-f', '--format', metavar='FMT', dest='fmt', default="%Y-%m-%d",
 			help="use FMT for parsing date from backup name")
 
@@ -159,12 +165,16 @@ def main():
 		sys.stderr.write("error: argument to --skip should be non-negative\n")
 		sys.exit(1)
 
+	if args.fuzz < 0:
+		sys.stderr.write("error: argument to --fuzz should be non-negative\n")
+		sys.exit(1)
+
 	inp = [ line.strip() for line in sys.stdin ]
 
 	try:
 		out = run(args, inp)
 	except Log2RotateUnsafeError:
-		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway)\n")
+		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")
 	else:
 		for line in out:
 			print(line)
