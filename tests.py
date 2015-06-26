@@ -137,6 +137,10 @@ class TestLog2RotateStr(unittest.TestCase):
 			self.assertEqual(inc_state, self.l2r.backups_to_keep(state[:n+1]))
 
 	def test_incremental_fuzz(self):
+		# this tests, if incrementally rotating backups yields the
+		# same result as rotating all at once.
+		#
+		# all combinations with one backup missing are tested.
 		n = 50
 
 		state = self._gen_state(n)
@@ -152,6 +156,21 @@ class TestLog2RotateStr(unittest.TestCase):
 				inc_state = self.l2r.backups_to_keep(inc_state, fuzz=1)
 
 				self.assertEqual(inc_state, self.l2r.backups_to_keep(state0, fuzz=1))
+
+	def test_oldest_backup_gone(self):
+		# We have a rotated set of backups. The oldest backup
+		# disappears. Another rotation should not remove anything.
+		n = 100
+
+		state = self._gen_state(n)
+		state2 = self.l2r.backups_to_keep(state)
+
+		state2 = set(state2)
+		state2.remove(min(state2))
+
+		state3 = set(self.l2r.backups_to_keep(state2))
+
+		self.assertEqual(state3, state2)
 
 	def test_unsafe(self):
 		# algorithm says "backup-20150103" should be kept, but
