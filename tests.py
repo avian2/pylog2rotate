@@ -57,6 +57,18 @@ class TestBackupsToKeep(unittest.TestCase):
 
 			#print_set(state)
 
+from log2rotate import Log2Rotate
+
+class TestFuzzyRange(unittest.TestCase):
+	def test_zero(self):
+		self.assertEqual([0], Log2Rotate.fuzzy_range(0))
+
+	def test_one(self):
+		self.assertEqual([0, 1, -1], Log2Rotate.fuzzy_range(1))
+
+	def test_two(self):
+		self.assertEqual([0, 1, -1, 2, -2], Log2Rotate.fuzzy_range(2))
+
 def _gen_state(n, fmt):
 	now = datetime.datetime(2015, 1, 1)
 	td = datetime.timedelta(days=1)
@@ -100,6 +112,36 @@ class TestLog2RotateStr(unittest.TestCase):
 					"backup-20150105",
 					"backup-20150106",
 					"backup-20150107"], self.l2r.backups_to_keep(state))
+
+	def test_twenty(self):
+		state = self._gen_state(20)
+		self.assertEqual([	"backup-20150101",
+					"backup-20150109",
+					"backup-20150113",
+					"backup-20150117",
+					"backup-20150119",
+					"backup-20150120"], self.l2r.backups_to_keep(state))
+
+	def test_twenty_fuzz(self):
+		state = self._gen_state(20)
+		del state[8]
+
+		self.assertEqual([	"backup-20150101",
+					"backup-20150108",
+					"backup-20150113",
+					"backup-20150117",
+					"backup-20150119",
+					"backup-20150120"], self.l2r.backups_to_keep(state, fuzz=1))
+
+	def test_twenty_fuzz(self):
+		state = [	"backup-20150101",
+				"backup-20150110",
+				"backup-20150113",
+				"backup-20150117",
+				"backup-20150119",
+				"backup-20150120"]
+
+		self.assertEqual(state, self.l2r.backups_to_keep(state, fuzz=1))
 
 	def test_spacing(self):
 		n = 10000
@@ -225,7 +267,7 @@ class TestLog2RotateStrSkip(unittest.TestCase):
 		state = self._gen_state(3)
 		self.assertEqual(state, self.l2r.backups_to_keep(state))
 
-	def test_skip_3(self):
+	def test_skip_3_fuzz(self):
 		state = [	"backup-20150101",
 				"backup-20150103" ]
 		fuzz_list = []

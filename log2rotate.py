@@ -41,7 +41,7 @@ class Log2Rotate(object):
 			new_state_set = set()
 			new_state = []
 			for n0 in sorted(r, reverse=True):
-				for m in range(fuzz+1):
+				for m in self.fuzzy_range(fuzz):
 					if n0+m in n0_to_b:
 						b = n0_to_b[n0+m]
 						if b not in new_state_set:
@@ -55,6 +55,10 @@ class Log2Rotate(object):
 						raise Log2RotateUnsafeError
 
 			return new_state
+
+	@staticmethod
+	def fuzzy_range(fuzz):
+		return sorted(reversed(range(-fuzz, fuzz+1)), key=lambda x:abs(x))
 
 	def pattern(self, n):
 		"""Returns a pattern of backups to keep, given history of n backups.
