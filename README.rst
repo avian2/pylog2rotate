@@ -7,6 +7,8 @@ command line interface as the original and adds:
 - keeping an arbitrary number of recent backups before applying the
   exponential rotation algorithm (--skip)
 
+- limited fuzzy matching in case of missing backups (--fuzz)
+
 - support for arbitrary date formats (--format)
 
 - a better detection of situations where applying the rotation algorithm
@@ -18,6 +20,11 @@ command line interface as the original and adds:
 
 See http://jekor.com/log2rotate
 
+Fuzzy matching produces better results than --unsafe in case occasional
+backups are missing from the series (due to backup server down-time, for
+example). With fuzzy matching, an older backup is selected for long-term
+keeping if the exact backup selected by the log2rotate algorithm is
+missing.
 
 License
 -------

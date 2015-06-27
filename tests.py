@@ -12,7 +12,7 @@ def print_set(r):
 		else:
 			l.append(' ')
 	
-	print ''.join(l)
+	print(''.join(l))
 		
 
 class TestBackupsToKeep(unittest.TestCase):
@@ -72,7 +72,7 @@ def _gen_state(n, fmt):
 class TestLog2RotateStr(unittest.TestCase):
 	def setUp(self):
 		self.fmt = "backup-%Y%m%d"
-		self.l2r = Log2RotateStr(self.fmt)
+		self.l2r = Log2RotateStr(fmt=self.fmt)
 
 	def test_zero(self):
 		self.assertEqual(set(), self.l2r.backups_to_keep([]))
@@ -116,19 +116,125 @@ class TestLog2RotateStr(unittest.TestCase):
 		self.assertGreaterEqual(len(new_state), log(n, 2))
 		self.assertLess(len(new_state), 2*log(n, 2))
 
-	def test_already_rotated(self):
-		state = self._gen_state(4)
+	def test_idempotency(self):
+		state = self._gen_state(10000)
 
 		state_1 = self.l2r.backups_to_keep(state)
 		state_2 = self.l2r.backups_to_keep(state_1)
 
 		self.assertEqual(state_1, state_2)
 
+	def test_incremental(self):
+		n = 200
+
+		state = self._gen_state(n)
+
+		inc_state = []
+		for n in range(n):
+			inc_state.append(state[n])
+			inc_state = self.l2r.backups_to_keep(inc_state)
+
+			self.assertEqual(inc_state, self.l2r.backups_to_keep(state[:n+1]))
+
+	def test_incremental_fuzz(self):
+		# this tests, if incrementally rotating backups yields the
+		# same result as rotating all at once.
+		#
+		# all combinations with one backup missing are tested.
+		n0 = 50
+
+		state = self._gen_state(n0)
+
+		for m in range(n0):
+			inc_state = []
+			state0 = []
+			for n in range(n0):
+				if n != m:
+					inc_state.append(state[n])
+					state0.append(state[n])
+
+				inc_state = self.l2r.backups_to_keep(inc_state, fuzz=1)
+
+				self.assertEqual(inc_state, self.l2r.backups_to_keep(state0, fuzz=1))
+
+	def test_compare_fuzz_nofuzz(self):
+		n0 = 50
+
+		state = self._gen_state(n0)
+
+		for m in range(n0):
+			state0 = []
+			state0_nofuzz = []
+
+			for n in range(n0):
+				if n != m:
+					state0.append(state[n])
+				state0_nofuzz.append(state[n])
+
+			rstate = self.l2r.backups_to_keep(state0, fuzz=1)
+			rstate_nofuzz = self.l2r.backups_to_keep(state0_nofuzz)
+
+			o = len(rstate)
+			o_nofuzz = len(rstate_nofuzz)
+
+			self.assertGreaterEqual(o_nofuzz, o)
+			self.assertLessEqual(o_nofuzz - o, 1)
+
+	def test_oldest_backup_gone(self):
+		# We have a rotated set of backups. The oldest backup
+		# disappears. Another rotation should not remove anything.
+		n = 100
+
+		state = self._gen_state(n)
+		state2 = self.l2r.backups_to_keep(state)
+
+		state2 = set(state2)
+		state2.remove(min(state2))
+
+		state3 = set(self.l2r.backups_to_keep(state2))
+
+		self.assertEqual(state3, state2)
+
 	def test_unsafe(self):
 		# algorithm says "backup-20150103" should be kept, but
 		# is missing in input list
 		state = [	"backup-20150101",
 				"backup-20150104" ]
+
+		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
+
+class TestLog2RotateStrSkip(unittest.TestCase):
+	def setUp(self):
+		self.fmt = "backup-%Y%m%d"
+		self.l2r = Log2RotateStr(fmt=self.fmt, skip=3)
+
+	def _gen_state(self, n):
+		return _gen_state(n, self.fmt)
+
+	def test_skip_7(self):
+		state = self._gen_state(7)
+
+		self.assertEqual([	"backup-20150101",
+					"backup-20150103",
+					"backup-20150104",
+					"backup-20150105",
+					"backup-20150106",
+					"backup-20150107"], self.l2r.backups_to_keep(state))
+
+	def test_skip_3(self):
+		state = self._gen_state(3)
+		self.assertEqual(state, self.l2r.backups_to_keep(state))
+
+	def test_skip_3(self):
+		state = [	"backup-20150101",
+				"backup-20150103" ]
+		fuzz_list = []
+		self.assertEqual(state, self.l2r.backups_to_keep(state, fuzz_list=fuzz_list, fuzz=1))
+		self.assertEqual(len(fuzz_list), 1)
+
+	def test_skip_unsafe(self):
+		state = [	"backup-20150101",
+				"backup-20150103" ]
 
 		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
 
