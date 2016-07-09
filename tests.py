@@ -57,7 +57,7 @@ class TestBackupsToKeep(unittest.TestCase):
 
 			#print_set(state)
 
-from log2rotate import Log2Rotate
+from log2rotate import Log2Rotate, Log2RotatePeriodError
 
 class TestFuzzyRange(unittest.TestCase):
 	def test_zero(self):
@@ -68,6 +68,19 @@ class TestFuzzyRange(unittest.TestCase):
 
 	def test_two(self):
 		self.assertEqual([0, 1, -1, 2, -2], Log2Rotate.fuzzy_range(2))
+
+class TestLog2Rotate(unittest.TestCase):
+	def test_simple(self):
+		l2r = Log2Rotate()
+
+		state = [ 1, 2, 3, 4 ]
+		self.assertEqual([1, 3, 4], l2r.backups_to_keep(state))
+
+	def test_duplicates(self):
+		l2r = Log2Rotate()
+
+		state = [ 1, 1, 2, 2, 3, 3, 4, 4 ]
+		self.assertRaises(Log2RotatePeriodError, l2r.backups_to_keep, state)
 
 def _gen_state(n, fmt):
 	now = datetime.datetime(2015, 1, 1)

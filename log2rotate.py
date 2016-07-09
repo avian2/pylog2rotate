@@ -13,9 +13,21 @@ def backups_to_keep(n):
 
 class Log2RotateUnsafeError(ValueError): pass
 
+class Log2RotatePeriodError(ValueError): pass
+
 class Log2Rotate(object):
 	def __init__(self, **kwargs):
 		pass
+
+	def _offset_to_backup_dict(self, last, state):
+		n0_to_b = {}
+		for b in state:
+			n0 = self.sub(last, b) + 1
+			if n0 in n0_to_b:
+				raise Log2RotatePeriodError
+			else:
+				n0_to_b[n0] = b
+		return n0_to_b
 
 	def backups_to_keep(self, state, unsafe=False, fuzz=0, fuzz_list=None):
 		for ref in state:
@@ -33,7 +45,7 @@ class Log2Rotate(object):
 			last = state_sorted[-1]
 			first = state_sorted[0]
 
-			n0_to_b = dict((self.sub(last, b) + 1, b) for b in state)
+			n0_to_b = self._offset_to_backup_dict(last, state)
 			n = self.sub(last, first) + 1
 
 			r = self.pattern(n)
@@ -71,6 +83,10 @@ class Log2Rotate(object):
 
 		return backups_to_keep(n)
 
+	# Algorithm above assumes that sub(x, y) == 0 iff x == y.
+	#
+	# This  assumption can break for instance if you have hourly backups
+	# and sub() assumes daily backups.
 	def sub(self, x, y):
 		return x - y
 
@@ -179,6 +195,8 @@ def main():
 		out = run(args, inp)
 	except Log2RotateUnsafeError:
 		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")
+	except Log2RotatePeriodError:
+		sys.stderr.write("error: seen multiple backups within one backup period (log2rotate currently assumes daily backups)\n")
 	else:
 		for line in out:
 			print(line)
