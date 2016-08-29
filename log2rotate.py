@@ -11,7 +11,27 @@ def backups_to_keep(n):
 	else:
 		return set([n]) | backups_to_keep(n - 2**(int(log(n, 2)) - 1))
 
-class Log2RotateUnsafeError(ValueError): pass
+class Log2RotateUnsafeError(ValueError):
+	def __init__(self, n0_to_b, n0):
+		self.n0_to_b = n0_to_b
+		self.n0 = n0
+
+	def __str__(self):
+
+		n0_last = self.n0
+		while n0_last not in self.n0_to_b:
+			n0_last += 1
+
+		n0_next = self.n0
+		while n0_next not in self.n0_to_b:
+			n0_next -= 1
+
+		fuzz = min(abs(self.n0 - n0_last), abs(self.n0 - n0_next))
+
+		return "missing a backup between %r and %r (fuzz %d)" % (
+				self.n0_to_b[n0_last],
+				self.n0_to_b[n0_next],
+				fuzz)
 
 class Log2RotatePeriodError(ValueError): pass
 
@@ -64,7 +84,7 @@ class Log2Rotate(object):
 						break
 				else:
 					if not unsafe:
-						raise Log2RotateUnsafeError
+						raise Log2RotateUnsafeError(n0_to_b, n0)
 
 			return new_state
 
@@ -193,8 +213,9 @@ def main():
 
 	try:
 		out = run(args, inp)
-	except Log2RotateUnsafeError:
-		sys.stderr.write("error: backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")
+	except Log2RotateUnsafeError, e:
+		sys.stderr.write("error: %s\n" % (e,))
+		sys.stderr.write("error: one or more backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")
 	except Log2RotatePeriodError:
 		sys.stderr.write("error: seen multiple backups within one backup period (log2rotate currently assumes daily backups)\n")
 	else:
