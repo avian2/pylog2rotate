@@ -16,22 +16,36 @@ class Log2RotateUnsafeError(ValueError):
 		self.n0_to_b = n0_to_b
 		self.n0 = n0
 
+		self.n0_last = self.n0
+		while self.n0_last not in self.n0_to_b:
+			self.n0_last += 1
+
+		self.n0_next = self.n0
+		while self.n0_next not in self.n0_to_b:
+			self.n0_next -= 1
+
 	def __str__(self):
 
-		n0_last = self.n0
-		while n0_last not in self.n0_to_b:
-			n0_last += 1
-
-		n0_next = self.n0
-		while n0_next not in self.n0_to_b:
-			n0_next -= 1
-
-		fuzz = min(abs(self.n0 - n0_last), abs(self.n0 - n0_next))
+		fuzz = min(abs(self.n0 - self.n0_last), abs(self.n0 - self.n0_next))
 
 		return "missing a backup between %r and %r (fuzz %d)" % (
-				self.n0_to_b[n0_last],
-				self.n0_to_b[n0_next],
+				self.n0_to_b[self.n0_last],
+				self.n0_to_b[self.n0_next],
 				fuzz)
+
+	def details(self):
+		lines = []
+
+		pad = max(map(lambda x:len(x), self.n0_to_b.values()))
+
+		n0_next = max(0, self.n0_next-1)
+
+		for n0 in range(self.n0_last+1, n0_next-1, -1):
+			b = self.n0_to_b.get(n0, "")
+			s = "<-- missing" if n0 == self.n0 else ""
+			lines.append("info: %4d  %s  %s" % (n0, b.rjust(pad), s))
+
+		return '\n'.join(lines)
 
 class Log2RotatePeriodError(ValueError): pass
 
@@ -215,6 +229,7 @@ def main():
 		out = run(args, inp)
 	except Log2RotateUnsafeError, e:
 		sys.stderr.write("error: %s\n" % (e,))
+		sys.stderr.write("%s\n" % (e.details(),))
 		sys.stderr.write("error: one or more backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")
 	except Log2RotatePeriodError:
 		sys.stderr.write("error: seen multiple backups within one backup period (log2rotate currently assumes daily backups)\n")
