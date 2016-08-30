@@ -156,6 +156,36 @@ class TestLog2RotateStr(unittest.TestCase):
 
 		self.assertEqual(state, self.l2r.backups_to_keep(state, fuzz=1))
 
+	def test_twenty_fuzz_list_1(self):
+		state = [	"backup-20150101",
+				"backup-20150110", # offset +1
+				"backup-20150113",
+				"backup-20150117",
+				"backup-20150119",
+				"backup-20150120"]
+
+		fuzz_list = []
+
+		state2 = self.l2r.backups_to_keep(state, fuzz=1, fuzz_list=fuzz_list)
+
+		self.assertEqual(state, state2)
+		self.assertEqual(1, len(fuzz_list))
+
+	def test_twenty_fuzz_list_2(self):
+		state = [	"backup-20150101",
+				"backup-20150108", # offset -1
+				"backup-20150113",
+				"backup-20150117",
+				"backup-20150119",
+				"backup-20150120"]
+
+		fuzz_list = []
+
+		state2 = self.l2r.backups_to_keep(state, fuzz=1, fuzz_list=fuzz_list)
+
+		self.assertEqual(state, state2)
+		self.assertEqual(1, len(fuzz_list))
+
 	def test_spacing(self):
 		n = 10000
 		state = self._gen_state(n)

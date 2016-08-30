@@ -93,8 +93,8 @@ class Log2Rotate(object):
 						if b not in new_state_set:
 							new_state.append(b)
 							new_state_set.add(b)
-						if m > 0 and fuzz_list is not None:
-							fuzz_list.append(1)
+						if m != 0 and fuzz_list is not None:
+							fuzz_list.append(b)
 						break
 				else:
 					if not unsafe:
@@ -183,7 +183,7 @@ def run(args, inp):
 	# the list of backups to keep.
 	if inp:
 		fuzz_list = []
-		out += l2r.backups_to_keep(inp, unsafe=args.unsafe, fuzz=args.fuzz, fuzz_list=[])
+		out += l2r.backups_to_keep(inp, unsafe=args.unsafe, fuzz=args.fuzz, fuzz_list=fuzz_list)
 
 		if fuzz_list:
 			sys.stderr.write("warning: used fuzzy matching for %d backups\n" % (len(fuzz_list),))
