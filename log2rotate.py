@@ -227,7 +227,7 @@ def main():
 
 	try:
 		out = run(args, inp)
-	except Log2RotateUnsafeError, e:
+	except Log2RotateUnsafeError as e:
 		sys.stderr.write("error: %s\n" % (e,))
 		sys.stderr.write("%s\n" % (e.details(),))
 		sys.stderr.write("error: one or more backups that should have been kept are missing from the input list (use --unsafe to proceed anyway or use higher --fuzz)\n")

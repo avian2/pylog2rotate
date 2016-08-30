@@ -299,7 +299,7 @@ class TestLog2RotateUnsafeError(unittest.TestCase):
 		#l2r.backups_to_keep(state)
 		try:
 			l2r.backups_to_keep(state)
-		except Log2RotateUnsafeError, e:
+		except Log2RotateUnsafeError as e:
 			self.assertEqual(str(e), "missing a backup between \'backup-20150101\' and \'backup-20150104\' (fuzz 1)")
 		else:
 			self.fail("did not raise Log2RotateUnsafeError")
