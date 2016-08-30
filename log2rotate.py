@@ -159,7 +159,7 @@ class Log2RotateStr(Log2RotateDatetime, Log2RotateSkip, Log2Rotate):
 
 def run(args, inp):
 
-	l2r = Log2RotateStr(fmt=args.fmt, skip=args.skip, fuzz=args.fuzz)
+	l2r = Log2RotateStr(fmt=args.fmt, skip=args.skip)
 
 	inp_orig = set(inp)
 
@@ -183,7 +183,7 @@ def run(args, inp):
 	# the list of backups to keep.
 	if inp:
 		fuzz_list = []
-		out += l2r.backups_to_keep(inp, unsafe=args.unsafe, fuzz_list=[])
+		out += l2r.backups_to_keep(inp, unsafe=args.unsafe, fuzz=args.fuzz, fuzz_list=[])
 
 		if fuzz_list:
 			sys.stderr.write("warning: used fuzzy matching for %d backups\n" % (len(fuzz_list),))

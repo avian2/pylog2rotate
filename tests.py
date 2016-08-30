@@ -313,6 +313,7 @@ class MockArgs(object):
 	def __init__(self):
 		self.fmt = "%Y-%m-%d"
 		self.skip = 0
+		self.fuzz = 0
 
 	def __getattr__(self, name):
 		return None
@@ -413,6 +414,18 @@ class TestMain(unittest.TestCase):
 
 		self.assertEqual(set([	"2015-01-01",
 					"2015-01-04"]), set(out))
+
+	def test_fuzz(self):
+		args = MockArgs()
+		args.fuzz = 1
+		args.show_keep = True
+
+		inp = [	"2015-01-01",
+			"2015-01-04" ]
+
+		out = run(args, inp)
+
+		self.assertEqual(set(inp), set(out))
 
 	def test_duplicates_ignored_keep(self):
 		args = MockArgs()
