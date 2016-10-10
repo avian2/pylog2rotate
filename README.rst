@@ -126,5 +126,10 @@ more details.
 You should have received a copy of the GNU General Public License along
 with this program. If not, see <http://www.gnu.org/licenses/>.
 
+See Also
+--------
+
+ * grandfatherson  implements the alternate Grandfather Father Son rotation algorithm in Python. https://github.com/ecometrica/grandfatherson
+
 ..
     vim: tw=75 ts=4 sw=4 expandtab softtabstop=4
