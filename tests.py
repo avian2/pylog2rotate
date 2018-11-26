@@ -339,6 +339,30 @@ class TestLog2RotateStrSkip(unittest.TestCase):
 
 		self.assertRaises(Log2RotateUnsafeError, self.l2r.backups_to_keep, state)
 
+	def test_skip_more_than_existing(self):
+		state = [	"backup-20181125",
+				"backup-20181126" ]
+
+		self.assertEqual(state, self.l2r.backups_to_keep(state))
+
+from log2rotate import Log2RotateSkip
+
+class TestLog2RotateSkip(unittest.TestCase):
+	def test_pattern_skip_greater_than_n(self):
+		l2r = Log2RotateSkip(skip=100)
+
+		self.assertEqual({1, 2, 3, 4, 5, 6}, l2r.pattern(6))
+
+	def test_pattern_skip_equal_to_n(self):
+		l2r = Log2RotateSkip(skip=6)
+
+		self.assertEqual({1, 2, 3, 4, 5, 6}, l2r.pattern(6))
+
+	def test_pattern_skip_less_than_n(self):
+		l2r = Log2RotateSkip(skip=2)
+
+		self.assertEqual({1, 2, 3, 4, 6}, l2r.pattern(6))
+
 class MockArgs(object):
 	def __init__(self):
 		self.fmt = "%Y-%m-%d"

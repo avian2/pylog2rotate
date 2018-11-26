@@ -146,7 +146,8 @@ class Log2RotateSkip(Log2Rotate):
 	def pattern(self, n):
 		assert self.skip >= 0
 
-		r = set(range(1, self.skip+1))
+		skip = min(n, self.skip)
+		r = set(range(1, skip+1))
 
 		if n > self.skip:
 			r2 = backups_to_keep(n - self.skip)
